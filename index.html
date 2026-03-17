@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Completo — Vias Pavimentação 2025</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        :root {
+            --black: #1d1d1b;
+            --blue: #164194;
+            --cyan: #00b1eb;
+            --green: #13a538;
+            --yellow: #fbba00;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #1d1d1b;
+            --text-light: #6b7280;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        /* NAV TABS */
+        .nav-tabs {
+            position: sticky;
+            top: 0;
+            z-index: 2000;
+            background: linear-gradient(135deg, var(--blue) 0%, #0d2a63 100%);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            gap: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+
+        .nav-brand {
+            color: white;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            margin-right: 32px;
+            padding: 14px 0;
+            white-space: nowrap;
+        }
+
+        .nav-brand .badge {
+            background: var(--cyan);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        .tab-btn {
+            padding: 14px 24px;
+            color: rgba(255,255,255,0.6);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            border: none;
+            background: none;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .tab-btn.active {
+            color: white;
+            border-bottom-color: var(--cyan);
+        }
+
+        /* COLOR BAR */
+        .color-bar {
+            display: flex;
+            height: 4px;
+            position: relative;
+            z-index: 2000;
+        }
+        .color-bar span { flex: 1; }
+        .color-bar span:nth-child(1) { background: var(--black); }
+        .color-bar span:nth-child(2) { background: var(--blue); }
+        .color-bar span:nth-child(3) { background: var(--cyan); }
+        .color-bar span:nth-child(4) { background: var(--green); }
+        .color-bar span:nth-child(5) { background: var(--yellow); }
+
+        /* PAGES */
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* ===================== DASHBOARD ===================== */
+        .main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 28px 32px 60px;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .kpi-card {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 22px 20px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+        }
+
+        .kpi-card:nth-child(1)::before { background: var(--blue); }
+        .kpi-card:nth-child(2)::before { background: var(--cyan); }
+        .kpi-card:nth-child(3)::before { background: var(--green); }
+        .kpi-card:nth-child(4)::before { background: var(--yellow); }
+        .kpi-card:nth-child(5)::before { background: var(--black); }
+
+        .kpi-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-light);
+            margin-bottom: 10px;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .kpi-sub { font-size: 12px; color: var(--text-light); font-weight: 500; }
+
+        .chart-grid {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        .grid-2 { grid-template-columns: 1fr 1fr; }
+        .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .grid-1-2 { grid-template-columns: 1.2fr 0.8fr; }
+
+        .chart-card {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: box-shadow 0.2s;
+        }
+
+        .chart-card:hover { box-shadow: var(--shadow-lg); }
+
+        .chart-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .chart-subtitle {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 18px;
+        }
+
+        .progress-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .progress-label { width: 110px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+
+        .progress-bar-bg {
+            flex: 1;
+            height: 24px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            min-width: 40px;
+        }
+
+        .progress-value {
+            font-size: 12px;
+            font-weight: 600;
+            width: 80px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* TABLE */
+        .table-card {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table thead th {
+            background: var(--bg);
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-light);
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .data-table tbody tr {
+            border-bottom: 1px solid #f3f4f6;
+            transition: background 0.15s;
+        }
+
+        .data-table tbody tr:hover { background: #f9fafb; }
+
+        .data-table tbody td { padding: 10px 12px; }
+
+        .data-table .valor { font-weight: 600; color: var(--blue); }
+
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-exec { background: #dcfce7; color: #166534; }
+        .badge-licitar { background: #fef3c7; color: #92400e; }
+        .badge-mr1 { background: #dbeafe; color: var(--blue); }
+        .badge-mr2 { background: #d1fae5; color: #065f46; }
+        .badge-mr3 { background: #e0f2fe; color: #0369a1; }
+        .badge-mr4 { background: #fef9c3; color: #854d0e; }
+        .badge-mr5 { background: #f3e8ff; color: #6b21a8; }
+
+        /* ===================== MAP PAGE ===================== */
+        .map-layout {
+            display: flex;
+            height: calc(100vh - 52px);
+        }
+
+        .sidebar {
+            width: 340px;
+            background: white;
+            overflow-y: auto;
+            border-right: 1px solid #e5e7eb;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-section {
+            padding: 16px 18px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .section-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .filter-group { margin-bottom: 14px; }
+
+        .filter-label { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+
+        .filter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+        .chip {
+            padding: 5px 12px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 2px solid #e5e7eb;
+            background: white;
+            color: #6b7280;
+            transition: all 0.15s;
+            user-select: none;
+        }
+
+        .chip:hover { border-color: #d1d5db; background: #f9fafb; }
+
+        .chip.active { border-color: var(--blue); background: rgba(22,65,148,0.08); color: var(--blue); }
+        .chip.active.c-recap { border-color: var(--cyan); background: rgba(0,177,235,0.1); color: #0284c7; }
+        .chip.active.c-pavasf { border-color: var(--green); background: rgba(19,165,56,0.1); color: var(--green); }
+        .chip.active.c-pavpol { border-color: var(--yellow); background: rgba(251,186,0,0.15); color: #92400e; }
+        .chip.active.c-eturb { border-color: var(--cyan); background: rgba(0,177,235,0.1); color: #0284c7; }
+        .chip.active.c-vereador { border-color: var(--green); background: rgba(19,165,56,0.1); color: var(--green); }
+        .chip.active.c-lideranca { border-color: var(--yellow); background: rgba(251,186,0,0.15); color: #92400e; }
+        .chip.active.c-exec { border-color: var(--green); background: rgba(19,165,56,0.1); color: var(--green); }
+        .chip.active.c-licitar { border-color: var(--yellow); background: rgba(251,186,0,0.15); color: #92400e; }
+        .chip.active.c-mr2 { border-color: var(--green); background: rgba(19,165,56,0.1); color: var(--green); }
+        .chip.active.c-mr3 { border-color: var(--cyan); background: rgba(0,177,235,0.1); color: #0284c7; }
+        .chip.active.c-mr4 { border-color: var(--yellow); background: rgba(251,186,0,0.15); color: #92400e; }
+        .chip.active.c-mr5 { border-color: #7c3aed; background: rgba(124,58,237,0.1); color: #7c3aed; }
+
+        .search-input {
+            width: 100%;
+            padding: 9px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .search-input:focus { border-color: var(--cyan); }
+
+        .stats-bar {
+            background: #f9fafb;
+            padding: 12px 18px;
+            display: flex;
+            gap: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+
+        .stat-item { text-align: center; flex: 1; }
+        .stat-value { font-size: 18px; font-weight: 800; color: var(--blue); }
+        .stat-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; }
+
+        .via-list { flex: 1; overflow-y: auto; }
+
+        .via-item {
+            padding: 10px 18px;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .via-item:hover { background: #f9fafb; }
+
+        .via-name {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .via-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 10px;
+            color: #9ca3af;
+        }
+
+        .via-meta .tag {
+            padding: 1px 7px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 9px;
+        }
+
+        .tag-exec { background: #dcfce7; color: #166534; }
+        .tag-licitar { background: #fef3c7; color: #92400e; }
+        .tag-mr { background: #dbeafe; color: var(--blue); }
+
+        .via-valor { font-size: 11px; font-weight: 700; color: var(--blue); }
+
+        .btn-clear {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            background: none;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-top: 8px;
+        }
+
+        .btn-clear:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+
+        #map {
+            flex: 1;
+            min-height: 400px;
+            z-index: 1;
+            background: #e5e7eb;
+        }
+
+        .legend-toggle {
+            position: absolute;
+            bottom: 30px;
+            right: 14px;
+            z-index: 999;
+            background: white;
+            border: none;
+            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 18px;
+        }
+
+        .legend-toggle:hover {
+            box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+            transform: scale(1.05);
+        }
+
+        .legend-toggle svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--blue);
+        }
+
+        .map-legend {
+            position: absolute;
+            bottom: 80px;
+            right: 14px;
+            background: white;
+            border-radius: 12px;
+            padding: 14px 18px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            z-index: 999;
+            font-size: 11px;
+            transform: translateY(10px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s ease;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+
+        .map-legend.open {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .map-legend h4 {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #9ca3af;
+            margin-bottom: 10px;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .legend-line { width: 28px; height: 4px; border-radius: 2px; }
+        .legend-item span { font-weight: 500; }
+
+        .leaflet-popup-content-wrapper { border-radius: 12px !important; box-shadow: 0 6px 24px rgba(0,0,0,0.15) !important; padding: 0 !important; }
+        .leaflet-popup-content { margin: 0 !important; min-width: 260px !important; }
+
+        .popup-inner { padding: 16px; }
+        .popup-inner h3 { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+        .popup-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; font-family: 'Inter', sans-serif; }
+        .popup-row .label { color: #9ca3af; font-weight: 500; }
+        .popup-row .value { font-weight: 600; }
+        .popup-bar { height: 4px; border-radius: 0 0 12px 12px; }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: var(--text-light);
+            border-top: 1px solid #e5e7eb;
+            background: white;
+        }
+
+        @media (max-width: 1100px) {
+            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+            .grid-2, .grid-1-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
+            .main { padding: 16px; }
+            .kpi-value { font-size: 22px; }
+            .map-layout { flex-direction: column; }
+            .sidebar { width: 100%; max-height: 45vh; }
+            #map { min-height: 55vh; }
+            .nav-brand { font-size: 14px; margin-right: 12px; }
+            .tab-btn { padding: 14px 14px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="nav-tabs">
+    <div class="nav-brand">
+        Pavimentação de Vias
+        <span class="badge">16/03/2025</span>
+    </div>
+    <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('mapa')">Mapa Interativo</button>
+</div>
+<div class="color-bar"><span></span><span></span><span></span><span></span><span></span></div>
+
+<!-- ===================== PAGE 1: DASHBOARD ===================== -->
+<div class="page active" id="page-dashboard">
+<div class="main">
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">Total de Vias</div>
+            <div class="kpi-value">114</div>
+            <div class="kpi-sub">vias catalogadas</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Investimento Total</div>
+            <div class="kpi-value">R$ 24,5M</div>
+            <div class="kpi-sub">valor estimado</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Extensão Total</div>
+            <div class="kpi-value">18,3 km</div>
+            <div class="kpi-sub">de vias mapeadas</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Bairros Atendidos</div>
+            <div class="kpi-value">24</div>
+            <div class="kpi-sub">em 5 microrregiões</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Em Execução</div>
+            <div class="kpi-value">74</div>
+            <div class="kpi-sub">vias sendo executadas</div>
+        </div>
+    </div>
+
+    <div class="chart-grid grid-1-2">
+        <div class="chart-card">
+            <div class="chart-title">Investimento por Tipo de Serviço</div>
+            <div class="chart-subtitle">Valor estimado por categoria de obra</div>
+            <div style="height:300px;"><canvas id="chartTipo"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">Distribuição por Status</div>
+            <div class="chart-subtitle">Obras em execução vs. a licitar</div>
+            <div style="height:300px;"><canvas id="chartStatus"></canvas></div>
+        </div>
+    </div>
+
+    <div class="chart-grid grid-2">
+        <div class="chart-card">
+            <div class="chart-title">Investimento por Microrregião</div>
+            <div class="chart-subtitle">Valor estimado (R$) e quantidade de vias</div>
+            <div style="height:320px;"><canvas id="chartMR"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">Origem das Indicações</div>
+            <div class="chart-subtitle">Quem solicitou as obras</div>
+            <div style="height:320px;"><canvas id="chartIndicacao"></canvas></div>
+        </div>
+    </div>
+
+    <div class="chart-grid" style="grid-template-columns:1fr;">
+        <div class="chart-card">
+            <div class="chart-title">Top 10 Bairros por Investimento</div>
+            <div class="chart-subtitle">Valor estimado total por bairro (R$)</div>
+            <div style="height:380px;"><canvas id="chartBairros"></canvas></div>
+        </div>
+    </div>
+
+    <div class="chart-grid grid-2">
+        <div class="chart-card">
+            <div class="chart-title">Extensão por Microrregião</div>
+            <div class="chart-subtitle">Quilômetros de vias por microrregião</div>
+            <div style="height:280px;"><canvas id="chartExtMR"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">Quantidade de Vias por Tipo</div>
+            <div class="chart-subtitle">Distribuição por tipo de intervenção</div>
+            <div style="height:280px;"><canvas id="chartQtdTipo"></canvas></div>
+        </div>
+    </div>
+
+    <div class="chart-grid grid-2">
+        <div class="chart-card">
+            <div class="chart-title">Investimento por Microrregião</div>
+            <div class="chart-subtitle">Proporção do investimento total</div>
+            <div style="margin-top:10px;">
+                <div class="progress-row"><div class="progress-label">MR1</div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:27%;background:var(--blue);">27%</div></div><div class="progress-value">R$ 6,6M</div></div>
+                <div class="progress-row"><div class="progress-label">MR2</div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:3%;background:var(--green);">3%</div></div><div class="progress-value">R$ 0,4M</div></div>
+                <div class="progress-row"><div class="progress-label">MR3</div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:21%;background:var(--cyan);">21%</div></div><div class="progress-value">R$ 5,1M</div></div>
+                <div class="progress-row"><div class="progress-label">MR4</div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:38%;background:var(--yellow);">38%</div></div><div class="progress-value">R$ 9,4M</div></div>
+                <div class="progress-row"><div class="progress-label">MR5</div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:12%;background:var(--black);">12%</div></div><div class="progress-value">R$ 2,9M</div></div>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">Largura Média das Vias</div>
+            <div class="chart-subtitle">Largura média (metros) por microrregião</div>
+            <div style="height:250px;"><canvas id="chartLargura"></canvas></div>
+        </div>
+    </div>
+
+    <div class="table-card" style="margin-top:4px;">
+        <div class="chart-title">Top 15 Obras por Valor Estimado</div>
+        <div class="chart-subtitle" style="margin-bottom:16px;">Maiores investimentos previstos</div>
+        <div style="overflow-x:auto;">
+            <table class="data-table">
+                <thead><tr><th>#</th><th>Via</th><th>Bairro</th><th>MR</th><th>Tipo</th><th>Extensão</th><th>Valor Estimado</th><th>Status</th></tr></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div class="footer">Dados extraídos de VIAS PAV 16.03.xlsx — Gerado automaticamente</div>
+</div>
+
+<!-- ===================== PAGE 2: MAPA ===================== -->
+<div class="page" id="page-mapa">
+<div class="map-layout">
+    <div class="sidebar">
+        <div class="sidebar-section">
+            <div class="section-title">Filtros</div>
+            <div class="filter-group">
+                <div class="filter-label">Tipo de Serviço</div>
+                <div class="filter-chips" id="filterTipo">
+                    <div class="chip active" data-value="CAPEAMENTO ASFALTICO" onclick="toggleChip(this,'tipo')">Capeamento</div>
+                    <div class="chip active c-recap" data-value="RECAPEAMENTO ASFALTICO" onclick="toggleChip(this,'tipo')">Recapeamento</div>
+                    <div class="chip active c-pavasf" data-value="PAVIMENTACAO ASFALTICA" onclick="toggleChip(this,'tipo')">Pav. Asfáltica</div>
+                    <div class="chip active c-pavpol" data-value="PAVIMENTACAO POLIEDRICA" onclick="toggleChip(this,'tipo')">Pav. Poliédrica</div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <div class="filter-label">Indicação</div>
+                <div class="filter-chips" id="filterIndic">
+                    <div class="chip active" data-value="SDU" onclick="toggleChip(this,'indic')">SDU</div>
+                    <div class="chip active c-eturb" data-value="ETURB" onclick="toggleChip(this,'indic')">ETURB</div>
+                    <div class="chip active c-vereador" data-value="VEREADOR" onclick="toggleChip(this,'indic')">Vereador</div>
+                    <div class="chip active c-lideranca" data-value="LIDERANCA" onclick="toggleChip(this,'indic')">Liderança</div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <div class="filter-label">Status</div>
+                <div class="filter-chips" id="filterStatus">
+                    <div class="chip active c-exec" data-value="EXEC. ETURB" onclick="toggleChip(this,'status')">Em Execução</div>
+                    <div class="chip active c-licitar" data-value="LICITAR" onclick="toggleChip(this,'status')">A Licitar</div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <div class="filter-label">Microrregião</div>
+                <div class="filter-chips" id="filterMR">
+                    <div class="chip active" data-value="MR1" onclick="toggleChip(this,'mr')">MR1</div>
+                    <div class="chip active c-mr2" data-value="MR2" onclick="toggleChip(this,'mr')">MR2</div>
+                    <div class="chip active c-mr3" data-value="MR3" onclick="toggleChip(this,'mr')">MR3</div>
+                    <div class="chip active c-mr4" data-value="MR4" onclick="toggleChip(this,'mr')">MR4</div>
+                    <div class="chip active c-mr5" data-value="MR5" onclick="toggleChip(this,'mr')">MR5</div>
+                </div>
+            </div>
+            <button class="btn-clear" onclick="clearFilters()">Limpar todos os filtros</button>
+        </div>
+        <div class="sidebar-section">
+            <div class="section-title">Buscar Via</div>
+            <input type="text" class="search-input" placeholder="Digite o nome da via..." id="searchInput" oninput="applyFilters()">
+        </div>
+        <div class="stats-bar">
+            <div class="stat-item"><div class="stat-value" id="statCount">0</div><div class="stat-label">Vias</div></div>
+            <div class="stat-item"><div class="stat-value" id="statExt">0</div><div class="stat-label">km</div></div>
+            <div class="stat-item"><div class="stat-value" id="statValor">0</div><div class="stat-label">R$ Milhões</div></div>
+        </div>
+        <div class="via-list" id="viaList"></div>
+    </div>
+    <div id="map"></div>
+</div>
+<button class="legend-toggle" id="legendToggle" style="display:none;" onclick="toggleLegend()" title="Legenda">
+    <svg viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm0 6h18v2H3v-2zm0 6h18v2H3v-2z"/></svg>
+</button>
+<div class="map-legend" id="mapLegend">
+    <h4>Tipo de Serviço</h4>
+    <div class="legend-item"><div class="legend-line" style="background:#164194;"></div><span>Capeamento Asfáltico</span></div>
+    <div class="legend-item"><div class="legend-line" style="background:#00b1eb;"></div><span>Recapeamento Asfáltico</span></div>
+    <div class="legend-item"><div class="legend-line" style="background:#13a538;"></div><span>Pavimentação Asfáltica</span></div>
+    <div class="legend-item"><div class="legend-line" style="background:#fbba00;"></div><span>Pavimentação Poliédrica</span></div>
+    <div style="margin-top:10px;"></div>
+    <h4>Status</h4>
+    <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#13a538;"></div><span>Em Execução (cheia)</span></div>
+    <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;border:2px dashed #fbba00;"></div><span>A Licitar (tracejada)</span></div>
+</div>
+</div>
+
+<script>
+// ============================================================
+// SHARED DATA
+// ============================================================
+const vias = [
+{id:1,tipo:'RECAPEAMENTO ASFALTICO',via:'RUA BURITI DOS LOPES',bairro:'São Pedro',mr:'MR1',ext:495.85,larg:7,valor:318184.92,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.115159,lonI:-42.805817,latF:-5.116993,lonF:-42.809897,obs:''},
+{id:2,tipo:'CAPEAMENTO ASFALTICO',via:'RUA MINISTRO PEDRO BORGES',bairro:'São Pedro',mr:'MR1',ext:481.16,larg:10,valor:441079.96,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.121925,lonI:-42.803685,latF:-5.12395,lonF:-42.807525,obs:''},
+{id:3,tipo:'CAPEAMENTO ASFALTICO',via:'RUA PIRIPIRI',bairro:'São Pedro',mr:'MR1',ext:572.65,larg:8,valor:419956.42,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.119071,lonI:-42.804134,latF:-5.121213,lonF:-42.808836,obs:''},
+{id:4,tipo:'CAPEAMENTO ASFALTICO',via:'RUA SÃO JOAO DO PIAUI',bairro:'São Pedro',mr:'MR1',ext:456.72,larg:7,valor:293074.96,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.117528,lonI:-42.808374,latF:-5.121284,lonF:-42.806664,obs:''},
+{id:5,tipo:'CAPEAMENTO ASFALTICO',via:'RUA RIACHUELO',bairro:'São Pedro',mr:'MR1',ext:221.81,larg:7,valor:142332.02,indic:'VEREADOR',ni:'FERNADA GOMES',status:'EXEC. ETURB',latI:-5.11438,lonI:-42.806849,latF:-5.11255,lonF:-42.807667,obs:''},
+{id:6,tipo:'RECAPEAMENTO ASFALTICO',via:'RUA MURILO BRAGA',bairro:'São Pedro',mr:'MR1',ext:547.31,larg:10,valor:501717.23,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.111003,lonI:-42.806938,latF:-5.112808,lonF:-42.811503,obs:''},
+{id:7,tipo:'CAPEAMENTO ASFALTICO',via:'RUA SIMPLÍCIO MENDES',bairro:'Pio XII',mr:'MR1',ext:227.89,larg:7,valor:146235.42,indic:'VEREADOR',ni:'LUIS ANDRE',status:'EXEC. ETURB',latI:-5.112595,lonI:-42.805318,latF:-5.110709,lonF:-42.806148,obs:''},
+{id:8,tipo:'RECAPEAMENTO ASFALTICO',via:'RUA SIMPLICIO MENDES',bairro:'Pio XII',mr:'MR1',ext:113.31,larg:7,valor:72707.87,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.115521,lonI:-42.804022,latF:-5.114579,lonF:-42.804426,obs:''},
+{id:9,tipo:'CAPEAMENTO ASFALTICO',via:'RUA BARROSO',bairro:'Pio XII',mr:'MR1',ext:106.97,larg:7,valor:68643.59,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.114326,lonI:-42.803798,latF:-5.115211,lonF:-42.803407,obs:''},
+{id:10,tipo:'CAPEAMENTO ASFALTICO',via:'RUA BARROSO',bairro:'São Pedro',mr:'MR1',ext:225.31,larg:7,valor:144581.41,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.110429,lonI:-42.805561,latF:-5.112285,lonF:-42.804723,obs:''},
+{id:11,tipo:'RECAPEAMENTO ASFALTICO',via:'RUA GILBUES',bairro:'São Pedro',mr:'MR1',ext:338.45,larg:7,valor:217182.75,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.112414,lonI:-42.809867,latF:-5.115229,lonF:-42.808674,obs:''},
+{id:12,tipo:'CAPEAMENTO ASFALTICO',via:'RUA EURIPEDES DE AGUIAR',bairro:'São Pedro',mr:'MR1',ext:292.58,larg:7,valor:187745.91,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.111887,lonI:-42.806317,latF:-5.110766,lonF:-42.803927,obs:''},
+{id:15,tipo:'RECAPEAMENTO ASFALTICO',via:'RUA ELESBAO VELOSO',bairro:'Bela Vista',mr:'MR3',ext:1204.97,larg:7,valor:773217.71,indic:'VEREADOR',ni:'DRAGA ALANA',status:'EXEC. ETURB',latI:-5.133742,lonI:-42.77432,latF:-5.125485,lonF:-42.767488,obs:''},
+{id:16,tipo:'RECAPEAMENTO ASFALTICO',via:'RUA ELESBAO VELOSO',bairro:'Bela Vista',mr:'MR3',ext:386.46,larg:7,valor:247987.70,indic:'VEREADOR',ni:'VALDEMIR VIRGINIO',status:'EXEC. ETURB',latI:-5.128397,lonI:-42.769376,latF:-5.125493,lonF:-42.767511,obs:''},
+{id:17,tipo:'RECAPEAMENTO ASFALTICO',via:'VIA DE ONIBUS IRMÃ DULCE',bairro:'Angelim',mr:'MR4',ext:2437,larg:7,valor:1563798.41,indic:'VEREADOR',ni:'PETRUS EVELYN',status:'EXEC. ETURB',latI:-5.193285,lonI:-42.771555,latF:-5.183153,lonF:-42.785899,obs:''},
+{id:18,tipo:'CAPEAMENTO ASFALTICO',via:'RUA BOLIVIA',bairro:'Cidade Nova',mr:'MR1',ext:263.51,larg:7,valor:169093.60,indic:'VEREADOR',ni:'PEDRO ALCANTARA',status:'EXEC. ETURB',latI:-5.113696,lonI:-42.79241,latF:-5.111425,lonF:-42.791901,obs:''},
+{id:19,tipo:'CAPEAMENTO ASFALTICO',via:'RUA MENINO DEUS',bairro:'Três Andares',mr:'MR1',ext:235.44,larg:7,valor:151078.22,indic:'VEREADOR',ni:'LEONIDAS',status:'EXEC. ETURB',latI:-5.11794,lonI:-42.789978,latF:-5.117233,lonF:-42.787975,obs:''},
+{id:20,tipo:'CAPEAMENTO ASFALTICO',via:'RUA NAZARE DO PIAUI',bairro:'Três Andares',mr:'MR1',ext:78.22,larg:7,valor:50194.16,indic:'VEREADOR',ni:'LEONIDAS',status:'EXEC. ETURB',latI:-5.117717,lonI:-42.789392,latF:-5.117047,lonF:-42.78962,obs:''},
+{id:21,tipo:'CAPEAMENTO ASFALTICO',via:'RUA ANTONIO MOREIRA',bairro:'Três Andares',mr:'MR1',ext:75.71,larg:7,valor:48584.72,indic:'VEREADOR',ni:'LEONIDAS',status:'EXEC. ETURB',latI:-5.117569,lonI:-42.78895,latF:-5.116918,lonF:-42.789162,obs:''},
+{id:22,tipo:'CAPEAMENTO ASFALTICO',via:'RUA ANTONIO LEMOS',bairro:'Três Andares',mr:'MR1',ext:72.08,larg:7,valor:46255.66,indic:'VEREADOR',ni:'LEONIDAS',status:'EXEC. ETURB',latI:-5.117411,lonI:-42.788521,latF:-5.116794,lonF:-42.788732,obs:''},
+{id:23,tipo:'CAPEAMENTO ASFALTICO',via:'RUA ISAIAS COELHO',bairro:'Três Andares',mr:'MR1',ext:51.26,larg:7,valor:32894.74,indic:'VEREADOR',ni:'LEONIDAS',status:'EXEC. ETURB',latI:-5.116617,lonI:-42.788102,latF:-5.117052,lonF:-42.787944,obs:''},
+{id:24,tipo:'CAPEAMENTO ASFALTICO',via:'RUA PAULISTANA',bairro:'São Pedro',mr:'MR1',ext:221.58,larg:7,valor:142188.21,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.117829,lonI:-42.808985,latF:-5.119648,lonF:-42.808149,obs:''},
+{id:25,tipo:'CAPEAMENTO ASFALTICO',via:'RUA SÃO JOÃO DO PIAUÍ',bairro:'São Pedro',mr:'MR1',ext:223.26,larg:7,valor:143263.48,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.113659,lonI:-42.810077,latF:-5.115512,lonF:-42.809279,obs:''},
+{id:26,tipo:'CAPEAMENTO ASFALTICO',via:'RUA HAITI',bairro:'Cidade Nova',mr:'MR1',ext:73.51,larg:7,valor:47168.01,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.112676,lonI:-42.790458,latF:-5.112056,lonF:-42.79022,obs:''},
+{id:27,tipo:'CAPEAMENTO ASFALTICO',via:'RUA PERU',bairro:'Cidade Nova',mr:'MR1',ext:452.96,larg:7,valor:290658.40,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.110146,lonI:-42.792256,latF:-5.111491,lonF:-42.788403,obs:''},
+{id:28,tipo:'CAPEAMENTO ASFALTICO',via:'RUA PANAMA',bairro:'Cidade Nova',mr:'MR1',ext:207.31,larg:7,valor:133026.65,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.110799,lonI:-42.787116,latF:-5.109052,lonF:-42.786439,obs:''},
+{id:29,tipo:'CAPEAMENTO ASFALTICO',via:'RUA DES. MOTA',bairro:'Cidade Nova',mr:'MR1',ext:73.36,larg:7,valor:47075.15,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.104997,lonI:-42.791072,latF:-5.105395,lonF:-42.790542,obs:''},
+{id:30,tipo:'CAPEAMENTO ASFALTICO',via:'RUA ACINETHE CAMPOS',bairro:'Bela Vista',mr:'MR3',ext:333.29,larg:7,valor:213869.73,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.136668,lonI:-42.777887,latF:-5.13457,lonF:-42.778603,obs:''},
+{id:31,tipo:'CAPEAMENTO ASFALTICO',via:'RUA CAPITAO MARIANO',bairro:'Bela Vista',mr:'MR3',ext:51.53,larg:7,valor:33066.26,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.135468,lonI:-42.777235,latF:-5.135454,lonF:-42.776771,obs:''},
+{id:32,tipo:'CAPEAMENTO ASFALTICO',via:'RUA PROF HELIO PAIVA',bairro:'Bela Vista',mr:'MR3',ext:129.24,larg:7,valor:82931.69,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.134913,lonI:-42.776748,latF:-5.134913,lonF:-42.777913,obs:''},
+{id:33,tipo:'CAPEAMENTO ASFALTICO',via:'RUA PROJETADA 1',bairro:'Bela Vista',mr:'MR3',ext:44.08,larg:7,valor:28287.44,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.13476,lonI:-42.778196,latF:-5.13442,lonF:-42.7784,obs:''},
+{id:34,tipo:'CAPEAMENTO ASFALTICO',via:'RUA PROJETADA 2',bairro:'Bela Vista',mr:'MR3',ext:24.84,larg:7,valor:15939.68,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.135144,lonI:-42.777498,latF:-5.13492,lonF:-42.777503,obs:''},
+{id:35,tipo:'CAPEAMENTO ASFALTICO',via:'R. CAROLINA DE F. LIRA',bairro:'Bela Vista',mr:'MR3',ext:105.03,larg:7,valor:67393.52,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.137366,lonI:-42.777681,latF:-5.137829,lonF:-42.776854,obs:''},
+{id:36,tipo:'CAPEAMENTO ASFALTICO',via:'R. VICTOR A. DE AGUIAR',bairro:'Santa Cruz',mr:'MR3',ext:121.16,larg:7,valor:77745.27,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.15194,lonI:-42.782167,latF:-5.152588,lonF:-42.783048,obs:''},
+{id:37,tipo:'CAPEAMENTO ASFALTICO',via:'R. RAIMUNDO N. PAIVA',bairro:'Santa Cruz',mr:'MR3',ext:105.43,larg:7,valor:67656.43,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.152621,lonI:-42.783053,latF:-5.153393,lonF:-42.782494,obs:''},
+{id:38,tipo:'CAPEAMENTO ASFALTICO',via:'R. JOSE ELIAS DA SILVA',bairro:'Parque Sul',mr:'MR3',ext:134.02,larg:7,valor:86000.52,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.13677,lonI:-42.747396,latF:-5.137858,lonF:-42.746866,obs:''},
+{id:39,tipo:'CAPEAMENTO ASFALTICO',via:'RUA 001',bairro:'Parque Sul',mr:'MR3',ext:353.23,larg:7,valor:226666.76,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.137816,lonI:-42.746845,latF:-5.134843,lonF:-42.745682,obs:''},
+{id:40,tipo:'CAPEAMENTO ASFALTICO',via:'RUA PROJETADA 3',bairro:'Parque Sul',mr:'MR3',ext:98.34,larg:7,valor:63107,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.134857,lonI:-42.745664,latF:-5.13527,lonF:-42.744879,obs:''},
+{id:41,tipo:'CAPEAMENTO ASFALTICO',via:'R. DR ARQUELAU C. AMORIM',bairro:'Parque Sul',mr:'MR3',ext:204.45,larg:7,valor:131190.98,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.135254,lonI:-42.74487,latF:-5.133596,lonF:-42.744055,obs:''},
+{id:42,tipo:'CAPEAMENTO ASFALTICO',via:'RUA SUCATA BEZERRINHA',bairro:'Angelim',mr:'MR4',ext:128.43,larg:7,valor:82415.14,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.165221,lonI:-42.789946,latF:-5.166379,lonF:-42.789855,obs:''},
+{id:43,tipo:'CAPEAMENTO ASFALTICO',via:'RUA OVIDIO WILSON',bairro:'Angelim',mr:'MR4',ext:209.27,larg:7,valor:134284.91,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.166368,lonI:-42.789824,latF:-5.165858,lonF:-42.788028,obs:''},
+{id:44,tipo:'CAPEAMENTO ASFALTICO',via:'R. SOLDADO LIDIO MESQUITA',bairro:'Angelim',mr:'MR4',ext:50.06,larg:7,valor:32121.42,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.165842,lonI:-42.788023,latF:-5.165395,lonF:-42.788089,obs:''},
+{id:46,tipo:'CAPEAMENTO ASFALTICO',via:'RUA MEDICA ALCOFORADO',bairro:'Parque Jacinta',mr:'MR4',ext:207.28,larg:7,valor:133011.54,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.175259,lonI:-42.763383,latF:-5.174699,lonF:-42.761599,obs:''},
+{id:47,tipo:'CAPEAMENTO ASFALTICO',via:'RUA PEIXE',bairro:'Angelim',mr:'MR4',ext:262.14,larg:7,valor:168210.06,indic:'VEREADOR',ni:'ISMAEL',status:'EXEC. ETURB',latI:-5.197019,lonI:-42.760655,latF:-5.199372,lonF:-42.760412,obs:''},
+{id:48,tipo:'CAPEAMENTO ASFALTICO',via:'R. JOSÉ DA COSTA ARAUJO',bairro:'Portal da Alegria',mr:'MR5',ext:43,larg:7,valor:27591.57,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.196329,lonI:-42.738147,latF:-5.196019,lonF:-42.737913,obs:''},
+{id:49,tipo:'CAPEAMENTO ASFALTICO',via:'R. DES ALVARO BRANDAO',bairro:'Pedra Miúda',mr:'MR5',ext:150.73,larg:7,valor:96720.03,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.200949,lonI:-42.743641,latF:-5.199797,lonF:-42.742927,obs:''},
+{id:50,tipo:'CAPEAMENTO ASFALTICO',via:'RUA II',bairro:'Pedra Miúda',mr:'MR5',ext:503.55,larg:7,valor:323124.67,indic:'ETURB',ni:'ETURB',status:'EXEC. ETURB',latI:-5.199803,lonI:-42.74288,latF:-5.199996,lonF:-42.738342,obs:''},
+{id:51,tipo:'CAPEAMENTO ASFALTICO',via:'RUA 21 DE ABRIL',bairro:'Macaúba',mr:'MR1',ext:469.6,larg:7,valor:301336.82,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.107933,lonI:-42.805265,latF:-5.106207,lonF:-42.801395,obs:''},
+{id:52,tipo:'PAVIMENTACAO ASFALTICA',via:'RUA CHAGAS LIRA',bairro:'Cristo Rei',mr:'MR1',ext:25.27,larg:7,valor:55677.64,indic:'SDU',ni:'',status:'LICITAR',latI:-5.095728,lonI:-42.781627,latF:-5.095739,lonF:-42.7814,obs:''},
+{id:53,tipo:'PAVIMENTACAO ASFALTICA',via:'RUA SÃO RAIMUNDO',bairro:'Cristo Rei',mr:'MR1',ext:211.77,larg:7,valor:466690.06,indic:'SDU',ni:'',status:'LICITAR',latI:-5.097169,lonI:-42.78345,latF:-5.097129,lonF:-42.781541,obs:''},
+{id:54,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA PANAMÁ',bairro:'Cristo Rei',mr:'MR1',ext:569.42,larg:7,valor:639826.83,indic:'SDU',ni:'',status:'LICITAR',latI:-5.104316,lonI:-42.780452,latF:-5.106302,lonF:-42.785182,obs:''},
+{id:55,tipo:'PAVIMENTACAO ASFALTICA',via:'RUA CÍCERO SOARES',bairro:'Catarina',mr:'MR2',ext:92.69,larg:7,valor:204270.10,indic:'SDU',ni:'',status:'LICITAR',latI:-5.123698,lonI:-42.784008,latF:-5.123676,lonF:-42.783172,obs:''},
+{id:56,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA 8',bairro:'Catarina',mr:'MR2',ext:100.13,larg:7,valor:112509.66,indic:'SDU',ni:'',status:'LICITAR',latI:-5.123032,lonI:-42.783127,latF:-5.123,lonF:-42.782225,obs:''},
+{id:57,tipo:'PAVIMENTACAO POLIEDRICA',via:'R. JOSÉ RIBEIRO SANTOS',bairro:'Santo Antônio',mr:'MR3',ext:64.01,larg:7,valor:71921.20,indic:'SDU',ni:'',status:'LICITAR',latI:-5.144989,lonI:-42.769982,latF:-5.14458,lonF:-42.769602,obs:''},
+{id:58,tipo:'PAVIMENTACAO POLIEDRICA',via:'R. PEDRO SAMPAIO M FILHO',bairro:'Bela Vista',mr:'MR3',ext:80.09,larg:7,valor:89989.56,indic:'LIDERANCA',ni:'JOSE PEREIRA',status:'LICITAR',latI:-5.146717,lonI:-42.772275,latF:-5.146059,lonF:-42.772572,obs:''},
+{id:59,tipo:'PAVIMENTACAO POLIEDRICA',via:'R. JOAO CORDEIRO LOPES',bairro:'Santo Antônio',mr:'MR3',ext:184.85,larg:7,valor:207702.12,indic:'SDU',ni:'',status:'LICITAR',latI:-5.155123,lonI:-42.778343,latF:-5.156746,lonF:-42.777956,obs:''},
+{id:60,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA SANTO ANTONIO',bairro:'Santo Antônio',mr:'MR3',ext:317.58,larg:7,valor:356841.96,indic:'SDU',ni:'',status:'LICITAR',latI:-5.155624,lonI:-42.776223,latF:-5.156151,lonF:-42.779037,obs:''},
+{id:61,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA DR. ELON HELIO',bairro:'Angelim',mr:'MR4',ext:367.46,larg:7,valor:412895.10,indic:'SDU',ni:'',status:'LICITAR',latI:-5.163151,lonI:-42.783517,latF:-5.163297,lonF:-42.780207,obs:''},
+{id:62,tipo:'PAVIMENTACAO ASFALTICA',via:'RUA JAMES SEGUNDO',bairro:'Angelim',mr:'MR4',ext:161.59,larg:7,valor:356097.19,indic:'SDU',ni:'',status:'LICITAR',latI:-5.162465,lonI:-42.781793,latF:-5.163924,lonF:-42.781878,obs:''},
+{id:63,tipo:'PAVIMENTACAO ASFALTICA',via:'AV. RIVADAVIA BRAZ',bairro:'Angelim',mr:'MR4',ext:163.19,larg:7,valor:359621.45,indic:'SDU',ni:'',status:'LICITAR',latI:-5.163825,lonI:-42.784281,latF:-5.162351,lonF:-42.784218,obs:''},
+{id:64,tipo:'PAVIMENTACAO ASFALTICA',via:'AV. ALZIRA DIAS ALVES',bairro:'Angelim',mr:'MR4',ext:53.29,larg:10,valor:167782.46,indic:'SDU',ni:'',status:'LICITAR',latI:-5.168697,lonI:-42.788012,latF:-5.168231,lonF:-42.788137,obs:''},
+{id:65,tipo:'CAPEAMENTO ASFALTICO',via:'AV JATOBA (trecho)',bairro:'Angelim',mr:'MR4',ext:110.92,larg:10,valor:101684.59,indic:'SDU',ni:'',status:'LICITAR',latI:-5.169448,lonI:-42.793232,latF:-5.169198,lonF:-42.792263,obs:''},
+{id:66,tipo:'CAPEAMENTO ASFALTICO',via:'AV. JATOBA',bairro:'Angelim',mr:'MR4',ext:881.69,larg:7,valor:565770.53,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.169231,lonI:-42.79224,latF:-5.167251,lonF:-42.784539,obs:''},
+{id:67,tipo:'CAPEAMENTO ASFALTICO',via:'AV JATOBA',bairro:'Angelim',mr:'MR4',ext:405.48,larg:7,valor:260189.63,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.169152,lonI:-42.792228,latF:-5.168274,lonF:-42.788677,obs:''},
+{id:68,tipo:'CAPEAMENTO ASFALTICO',via:'R. PROF ELENIR C. LAGO',bairro:'Angelim',mr:'MR4',ext:202.82,larg:7,valor:130147.28,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.169859,lonI:-42.78576,latF:-5.169418,lonF:-42.783985,obs:''},
+{id:69,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA BOM FUTURO',bairro:'Angelim',mr:'MR4',ext:761.87,larg:7,valor:856064.46,indic:'SDU',ni:'',status:'LICITAR',latI:-5.16952,lonI:-42.781665,latF:-5.167477,lonF:-42.775102,obs:''},
+{id:70,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA 7',bairro:'Angelim',mr:'MR4',ext:217.09,larg:7,valor:243928.65,indic:'SDU',ni:'',status:'LICITAR',latI:-5.167059,lonI:-42.777531,latF:-5.168952,lonF:-42.777012,obs:''},
+{id:71,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA 11',bairro:'Angelim',mr:'MR4',ext:289.2,larg:7,valor:324959.88,indic:'SDU',ni:'',status:'LICITAR',latI:-5.168556,lonI:-42.778602,latF:-5.165998,lonF:-42.779062,obs:''},
+{id:72,tipo:'RECAPEAMENTO ASFALTICO',via:'AV MIN EVANDRO LINS SILVA',bairro:'Angelim',mr:'MR4',ext:1064.03,larg:7,valor:682779.06,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.174472,lonI:-42.775356,latF:-5.183786,lonF:-42.773272,obs:''},
+{id:73,tipo:'CAPEAMENTO ASFALTICO',via:'RUA 7',bairro:'Angelim',mr:'MR4',ext:126.24,larg:7,valor:81010.03,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.194981,lonI:-42.762077,latF:-5.196077,lonF:-42.76176,obs:''},
+{id:74,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA SEIVA PROJETADA',bairro:'Angelim',mr:'MR4',ext:94.69,larg:7,valor:106392.16,indic:'SDU',ni:'',status:'LICITAR',latI:-5.192337,lonI:-42.787967,latF:-5.191481,lonF:-42.787974,obs:''},
+{id:75,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA 4 PROJETADA',bairro:'Angelim',mr:'MR4',ext:398.31,larg:7,valor:447558.14,indic:'SDU',ni:'',status:'LICITAR',latI:-5.191401,lonI:-42.789939,latF:-5.191534,lonF:-42.786348,obs:''},
+{id:76,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA 5 PROJETADA',bairro:'Angelim',mr:'MR4',ext:405.23,larg:7,valor:455332.63,indic:'SDU',ni:'',status:'LICITAR',latI:-5.19182,lonI:-42.790012,latF:-5.191986,lonF:-42.786361,obs:''},
+{id:77,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA 6 PROJETADA',bairro:'Angelim',mr:'MR4',ext:96.81,larg:7,valor:108774.52,indic:'SDU',ni:'',status:'LICITAR',latI:-5.191391,lonI:-42.789971,latF:-5.192262,lonF:-42.790062,obs:''},
+{id:78,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA 7 PROJETADA',bairro:'Angelim',mr:'MR4',ext:100.8,larg:7,valor:113260.37,indic:'SDU',ni:'',status:'LICITAR',latI:-5.191539,lonI:-42.786344,latF:-5.192447,lonF:-42.786401,obs:''},
+{id:79,tipo:'CAPEAMENTO ASFALTICO',via:'RUA 1',bairro:'Angélica',mr:'MR5',ext:220.65,larg:7,valor:141587.56,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.200439,lonI:-42.760045,latF:-5.200396,lonF:-42.762035,obs:''},
+{id:80,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA 007',bairro:'Pedra Miúda',mr:'MR5',ext:70.45,larg:7,valor:79155.58,indic:'SDU',ni:'',status:'LICITAR',latI:-5.198246,lonI:-42.743929,latF:-5.197609,lonF:-42.74391,obs:''},
+{id:179,tipo:'CAPEAMENTO ASFALTICO',via:'RUA ARGENTINA',bairro:'Cidade Nova',mr:'MR1',ext:464.89,larg:4.4,valor:187513,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.110737,lonI:-42.793599,latF:-5.112212,lonF:-42.789673,obs:''},
+{id:180,tipo:'CAPEAMENTO ASFALTICO',via:'RUA HAITI TRECHO 2',bairro:'Cidade Nova',mr:'MR1',ext:110.4,larg:7,valor:70839.73,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.111968,lonI:-42.790194,latF:-5.111017,lonF:-42.789891,obs:''},
+{id:81,tipo:'CAPEAMENTO ASFALTICO',via:'R. ESMARAGDO DE FREITAS',bairro:'Monte Castelo',mr:'MR1',ext:199.57,larg:7,valor:128059.31,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.101668,lonI:-42.795281,latF:-5.10068,lonF:-42.793794,obs:''},
+{id:82,tipo:'PAVIMENTACAO POLIEDRICA',via:'R. FRANCISCO GIL C. BRANCO',bairro:'Lourival Parente',mr:'MR2',ext:88.97,larg:7,valor:99968.32,indic:'SDU',ni:'',status:'LICITAR',latI:-5.138652,lonI:-42.78512,latF:-5.139076,lonF:-42.784438,obs:''},
+{id:83,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA PENEDO',bairro:'Bela Vista',mr:'MR3',ext:59.78,larg:7,valor:67166.85,indic:'SDU',ni:'',status:'LICITAR',latI:-5.127168,lonI:-42.775459,latF:-5.126717,lonF:-42.775758,obs:''},
+{id:183,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA CANDIDA SOARES',bairro:'Santo Antônio',mr:'MR3',ext:225.69,larg:7,valor:253591.29,indic:'SDU',ni:'',status:'LICITAR',latI:-5.151138,lonI:-42.772491,latF:-5.149313,lonF:-42.77158,obs:''},
+{id:84,tipo:'CAPEAMENTO ASFALTICO',via:'RUA ITALO ARAUJO',bairro:'Parque Sul',mr:'MR3',ext:488.9,larg:7,valor:313719.97,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.136545,lonI:-42.752681,latF:-5.138907,lonF:-42.748956,obs:''},
+{id:85,tipo:'CAPEAMENTO ASFALTICO',via:'R. JOSÉ RIBAMAR VIEIRA',bairro:'Parque Sul',mr:'MR3',ext:192.82,larg:7,valor:123731.43,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.136816,lonI:-42.752263,latF:-5.138349,lonF:-42.753092,obs:''},
+{id:86,tipo:'PAVIMENTACAO POLIEDRICA',via:'R. DR AIRTON FREITAS',bairro:'Parque Sul',mr:'MR3',ext:256.97,larg:7,valor:288737.98,indic:'SDU',ni:'',status:'LICITAR',latI:-5.154311,lonI:-42.761636,latF:-5.156242,lonF:-42.762926,obs:''},
+{id:87,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA INES TEIXEIRA',bairro:'Santo Antônio',mr:'MR3',ext:173.17,larg:7,valor:194579.75,indic:'SDU',ni:'',status:'LICITAR',latI:-5.151372,lonI:-42.777406,latF:-5.150884,lonF:-42.775922,obs:''},
+{id:88,tipo:'CAPEAMENTO ASFALTICO',via:'RUA ANGELICA',bairro:'Santo Antônio',mr:'MR3',ext:122.44,larg:7,valor:78571.54,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.152394,lonI:-42.778117,latF:-5.153391,lonF:-42.777636,obs:''},
+{id:89,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA TRÊS',bairro:'Areias',mr:'MR3',ext:187.07,larg:7,valor:210198.83,indic:'SDU',ni:'',status:'LICITAR',latI:-5.158859,lonI:-42.790709,latF:-5.159057,lonF:-42.792385,obs:''},
+{id:90,tipo:'PAVIMENTACAO POLIEDRICA',via:'AV M. F. DE OLIVEIRA',bairro:'Angelim',mr:'MR4',ext:109.97,larg:7,valor:123571.27,indic:'SDU',ni:'',status:'LICITAR',latI:-5.163727,lonI:-42.788701,latF:-5.163708,lonF:-42.789693,obs:''},
+{id:91,tipo:'RECAPEAMENTO ASFALTICO',via:'RUA DEZ',bairro:'Angelim',mr:'MR4',ext:462.99,larg:7,valor:297097.90,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.168975,lonI:-42.793329,latF:-5.167564,lonF:-42.789468,obs:''},
+{id:92,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA PROJETADA 11',bairro:'Angelim',mr:'MR4',ext:294.57,larg:7,valor:330988.44,indic:'SDU',ni:'',status:'LICITAR',latI:-5.165899,lonI:-42.780292,latF:-5.166155,lonF:-42.777648,obs:''},
+{id:93,tipo:'PAVIMENTACAO ASFALTICA',via:'R. EURIPEDES R. DA SILVA',bairro:'Parque Jacinta',mr:'MR4',ext:518.05,larg:7,valor:1141650.38,indic:'SDU',ni:'',status:'LICITAR',latI:-5.17432,lonI:-42.765818,latF:-5.173035,lonF:-42.761346,obs:''},
+{id:94,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA DAVI 03 E 04',bairro:'Angelim',mr:'MR4',ext:252.03,larg:7,valor:283187.43,indic:'SDU',ni:'',status:'LICITAR',latI:-5.185688,lonI:-42.786097,latF:-5.185467,lonF:-42.788359,obs:''},
+{id:95,tipo:'PAVIMENTACAO POLIEDRICA',via:'AV JOCA CLAUDINO',bairro:'Esplanada',mr:'MR4',ext:200.09,larg:7,valor:224827.11,indic:'SDU',ni:'',status:'LICITAR',latI:-5.186827,lonI:-42.757589,latF:-5.186293,lonF:-42.755865,obs:''},
+{id:96,tipo:'PAVIMENTACAO POLIEDRICA',via:'AV DOIS',bairro:'Pedra Miúda',mr:'MR5',ext:204.46,larg:12,valor:393830.37,indic:'SDU',ni:'',status:'LICITAR',latI:-5.198764,lonI:-42.747479,latF:-5.198687,lonF:-42.749321,obs:''},
+{id:97,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA PROJETADA 12',bairro:'Cerâmica Cil',mr:'MR5',ext:70.25,larg:7,valor:78931.05,indic:'VEREADOR',ni:'SAMUEL ALENCAR',status:'LICITAR',latI:-5.281876,lonI:-42.799677,latF:-5.281659,lonF:-42.799081,obs:''},
+{id:98,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA 22',bairro:'Cerâmica Cil',mr:'MR5',ext:68.78,larg:7,valor:77278.67,indic:'VEREADOR',ni:'SAMUEL ALENCAR',status:'LICITAR',latI:-5.28161,lonI:-42.79906,latF:-5.282198,lonF:-42.798858,obs:''},
+{id:99,tipo:'CAPEAMENTO ASFALTICO',via:'R. NOSSA SRA DO CARMO',bairro:'Angelim',mr:'MR4',ext:340.49,larg:7,valor:218491.66,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.196129,lonI:-42.759776,latF:-5.196086,lonF:-42.762846,obs:''},
+{id:100,tipo:'CAPEAMENTO ASFALTICO',via:'R. PESCADOR ABDIAS MACEDO',bairro:'Parque Sul',mr:'MR3',ext:191.38,larg:7,valor:122807.17,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.153568,lonI:-42.758182,latF:-5.154524,lonF:-42.756743,obs:''},
+{id:101,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA PROJETADA 13',bairro:'Cristo Rei',mr:'MR1',ext:72.61,larg:7,valor:81587.08,indic:'SDU',ni:'',status:'LICITAR',latI:-5.104526,lonI:-42.782371,latF:-5.104259,lonF:-42.781772,obs:''},
+{id:102,tipo:'PAVIMENTACAO POLIEDRICA',via:'RUA PROJETADA 14',bairro:'Cristo Rei',mr:'MR1',ext:102.48,larg:7,valor:115145.15,indic:'SDU',ni:'',status:'LICITAR',latI:-5.104958,lonI:-42.782195,latF:-5.104099,lonF:-42.782542,obs:''},
+{id:103,tipo:'PAVIMENTACAO POLIEDRICA',via:'R. NOSSA SRA APARECIDA',bairro:'Angelim',mr:'MR4',ext:101.9,larg:7,valor:114501.95,indic:'SDU',ni:'',status:'LICITAR',latI:-5.187301,lonI:-42.774982,latF:-5.187302,lonF:-42.775901,obs:''},
+{id:104,tipo:'PAVIMENTACAO POLIEDRICA',via:'R. 12 LOT JULIO SOARES',bairro:'Angelim',mr:'MR4',ext:80.38,larg:7,valor:90316.91,indic:'SDU',ni:'',status:'LICITAR',latI:-5.187652,lonI:-42.775801,latF:-5.186982,lonF:-42.775879,obs:''},
+{id:105,tipo:'CAPEAMENTO ASFALTICO',via:'VITOR A. DE AGUIAR',bairro:'Santa Cruz',mr:'MR3',ext:232,larg:7,valor:148869.84,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.152588,lonI:-42.783048,latF:-5.153795,lonF:-42.784759,obs:''},
+{id:106,tipo:'CAPEAMENTO ASFALTICO',via:'R. TERESINHA P. MATIAS',bairro:'Santa Cruz',mr:'MR3',ext:268.73,larg:7,valor:172438.97,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.152306,lonI:-42.784579,latF:-5.154387,lonF:-42.783355,obs:''},
+{id:107,tipo:'CAPEAMENTO ASFALTICO',via:'RUA ARACATUBA',bairro:'Santa Cruz',mr:'MR3',ext:121.73,larg:7,valor:78114.94,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.154239,lonI:-42.78735,latF:-5.15525,lonF:-42.786915,obs:''},
+{id:108,tipo:'CAPEAMENTO ASFALTICO',via:'R. PROF ELENIR C. LAGO',bairro:'Angelim',mr:'MR4',ext:377.52,larg:7,valor:242249.53,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.170332,lonI:-42.787656,latF:-5.171156,lonF:-42.79096,obs:''},
+{id:109,tipo:'CAPEAMENTO ASFALTICO',via:'RUA PEDAGOGA WANA SARA',bairro:'Angelim',mr:'MR4',ext:222.33,larg:7,valor:142669.57,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.170029,lonI:-42.791247,latF:-5.171994,lonF:-42.791081,obs:''},
+{id:110,tipo:'CAPEAMENTO ASFALTICO',via:'RUA 2 INACIO SOARES',bairro:'Angélica',mr:'MR5',ext:426.24,larg:7,valor:273511.37,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.200413,lonI:-42.761399,latF:-5.204098,lonF:-42.760271,obs:''},
+{id:111,tipo:'CAPEAMENTO ASFALTICO',via:'AV LINDALMA SOARES (1)',bairro:'Angélica',mr:'MR5',ext:219.8,larg:15,valor:302242.45,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.209617,lonI:-42.760617,latF:-5.209588,lonF:-42.762599,obs:''},
+{id:112,tipo:'CAPEAMENTO ASFALTICO',via:'AV LINDALMA SOARES (2)',bairro:'Angélica',mr:'MR5',ext:326.97,larg:14,valor:419632.62,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.209591,lonI:-42.762615,latF:-5.209538,lonF:-42.765564,obs:''},
+{id:113,tipo:'CAPEAMENTO ASFALTICO',via:'AV PROJETADA',bairro:'Angélica',mr:'MR5',ext:380.78,larg:10,valor:349058,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.2077,lonI:-42.765618,latF:-5.211143,lonF:-42.765627,obs:''},
+{id:114,tipo:'CAPEAMENTO ASFALTICO',via:'R. NOSSA SRA DE NAZARÉ',bairro:'Angelim',mr:'MR4',ext:365.2,larg:7,valor:234342.46,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.186641,lonI:-42.762652,latF:-5.187589,lonF:-42.765807,obs:''},
+{id:115,tipo:'CAPEAMENTO ASFALTICO',via:'RUA MARINA DA VERMELHA(1)',bairro:'Pedra Miúda',mr:'MR5',ext:219.92,larg:7,valor:141120.57,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.224494,lonI:-42.746669,latF:-5.223992,lonF:-42.744749,obs:''},
+{id:116,tipo:'CAPEAMENTO ASFALTICO',via:'RUA MARINA DA VERMELHA(2)',bairro:'Pedra Miúda',mr:'MR5',ext:229.04,larg:7,valor:146975.01,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.223951,lonI:-42.744594,latF:-5.223429,lonF:-42.742595,obs:''},
+{id:117,tipo:'CAPEAMENTO ASFALTICO',via:'RUA IV',bairro:'Pedra Miúda',mr:'MR5',ext:96.34,larg:7,valor:61819.50,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.223464,lonI:-42.742595,latF:-5.224308,lonF:-42.742383,obs:''},
+{id:118,tipo:'CAPEAMENTO ASFALTICO',via:'RUA PROJETADA 13',bairro:'Pedra Miúda',mr:'MR5',ext:230.45,larg:7,valor:147878.54,indic:'SDU',ni:'',status:'EXEC. ETURB',latI:-5.224316,lonI:-42.742353,latF:-5.223791,lonF:-42.740341,obs:''},
+];
+
+const tipoColors = {'CAPEAMENTO ASFALTICO':'#164194','RECAPEAMENTO ASFALTICO':'#00b1eb','PAVIMENTACAO ASFALTICA':'#13a538','PAVIMENTACAO POLIEDRICA':'#fbba00'};
+const fmtCur = v => 'R$ '+(v/1e6).toFixed(2).replace('.',',')+' M';
+const fmtCurK = v => 'R$ '+(v/1000).toFixed(0)+'k';
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+let mapInstance = null;
+let mapInitialized = false;
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-'+tab).classList.add('active');
+    document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
+
+    if (tab === 'mapa') {
+        document.getElementById('legendToggle').style.display = 'flex';
+        if (!mapInitialized) {
+            initMap();
+            mapInitialized = true;
+        } else {
+            setTimeout(() => mapInstance.invalidateSize(), 100);
+        }
+    } else {
+        document.getElementById('legendToggle').style.display = 'none';
+        document.getElementById('mapLegend').classList.remove('open');
+    }
+}
+
+// ============================================================
+// DASHBOARD CHARTS
+// ============================================================
+const tipoAgg={};const tipoQtd={};const statusAgg={};const mrAgg={};const mrCount={};const mrExtAgg={};const indicAgg={};const bairroAgg={};const mrLargS={};const mrLargC={};
+vias.forEach(v=>{
+    const t=v.tipo.replace('PAVIMENTACAO','PAV.').replace('ASFALTICO','ASF.').replace('ASFALTICA','ASF.').replace('POLIEDRICA','POLIED.').replace('RECAPEAMENTO','RECAP.').replace('CAPEAMENTO','CAPE.');
+    tipoAgg[t]=(tipoAgg[t]||0)+v.valor;
+    tipoQtd[t]=(tipoQtd[t]||0)+1;
+    const s=v.status==='EXEC. ETURB'?'Em Execução':'A Licitar';
+    statusAgg[s]=(statusAgg[s]||0)+1;
+    mrAgg[v.mr]=(mrAgg[v.mr]||0)+v.valor;
+    mrCount[v.mr]=(mrCount[v.mr]||0)+1;
+    mrExtAgg[v.mr]=(mrExtAgg[v.mr]||0)+v.ext;
+    indicAgg[v.indic]=(indicAgg[v.indic]||0)+1;
+    bairroAgg[v.bairro]=(bairroAgg[v.bairro]||0)+v.valor;
+    mrLargS[v.mr]=(mrLargS[v.mr]||0)+v.larg;
+    mrLargC[v.mr]=(mrLargC[v.mr]||0)+1;
+});
+const mrLabels=['MR1','MR2','MR3','MR4','MR5'];
+const clrs=['#164194','#00b1eb','#13a538','#fbba00','#1d1d1b'];
+
+new Chart(document.getElementById('chartTipo'),{type:'doughnut',data:{labels:Object.keys(tipoAgg),datasets:[{data:Object.values(tipoAgg),backgroundColor:clrs.slice(0,4),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{padding:14,font:{size:11,family:'Inter'},usePointStyle:true,pointStyle:'circle'}},tooltip:{callbacks:{label:c=>c.label+': '+fmtCur(c.raw)}}}}});
+
+new Chart(document.getElementById('chartStatus'),{type:'doughnut',data:{labels:Object.keys(statusAgg),datasets:[{data:Object.values(statusAgg),backgroundColor:['#13a538','#fbba00'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{padding:14,font:{size:12,family:'Inter'},usePointStyle:true,pointStyle:'circle'}},tooltip:{callbacks:{label:c=>c.label+': '+c.raw+' vias'}}}}});
+
+new Chart(document.getElementById('chartMR'),{type:'bar',data:{labels:mrLabels,datasets:[{label:'Valor (R$)',data:mrLabels.map(m=>mrAgg[m]||0),backgroundColor:clrs,borderRadius:6,borderSkipped:false,yAxisID:'y'},{label:'Qtd Vias',data:mrLabels.map(m=>mrCount[m]||0),type:'line',borderColor:'#00b1eb',backgroundColor:'#00b1eb',pointRadius:5,pointBackgroundColor:'#00b1eb',tension:.3,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11,family:'Inter'},usePointStyle:true,pointStyle:'circle',padding:14}},tooltip:{callbacks:{label:c=>c.dataset.label==='Valor (R$)'?fmtCur(c.raw):c.raw+' vias'}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>fmtCur(v),font:{size:10}},grid:{color:'#f3f4f6'}},y1:{position:'right',beginAtZero:true,grid:{display:false},ticks:{font:{size:10}}},x:{ticks:{font:{size:12,weight:600}},grid:{display:false}}}}});
+
+const indicSorted=Object.entries(indicAgg).sort((a,b)=>b[1]-a[1]);
+new Chart(document.getElementById('chartIndicacao'),{type:'bar',data:{labels:indicSorted.map(i=>i[0]),datasets:[{data:indicSorted.map(i=>i[1]),backgroundColor:clrs.slice(0,4),borderRadius:6,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' vias'}}},scales:{x:{beginAtZero:true,grid:{color:'#f3f4f6'}},y:{ticks:{font:{size:12,weight:600}},grid:{display:false}}}}});
+
+const bairroSorted=Object.entries(bairroAgg).sort((a,b)=>b[1]-a[1]).slice(0,10);
+new Chart(document.getElementById('chartBairros'),{type:'bar',data:{labels:bairroSorted.map(b=>b[0]),datasets:[{data:bairroSorted.map(b=>b[1]),backgroundColor:clrs.concat(clrs).slice(0,10),borderRadius:6,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtCur(c.raw)}}},scales:{x:{beginAtZero:true,ticks:{callback:v=>fmtCur(v),font:{size:10}},grid:{color:'#f3f4f6'}},y:{ticks:{font:{size:11,weight:600}},grid:{display:false}}}}});
+
+new Chart(document.getElementById('chartExtMR'),{type:'bar',data:{labels:mrLabels,datasets:[{label:'Extensão (m)',data:mrLabels.map(m=>mrExtAgg[m]||0),backgroundColor:clrs.map(c=>c+'cc'),borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>(c.raw/1000).toFixed(2)+' km'}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>(v/1000).toFixed(1)+' km',font:{size:10}},grid:{color:'#f3f4f6'}},x:{ticks:{font:{size:12,weight:600}},grid:{display:false}}}}});
+
+new Chart(document.getElementById('chartQtdTipo'),{type:'polarArea',data:{labels:Object.keys(tipoQtd),datasets:[{data:Object.values(tipoQtd),backgroundColor:clrs.slice(0,4).map(c=>c+'aa')}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10,family:'Inter'},usePointStyle:true,pointStyle:'circle',padding:10}},tooltip:{callbacks:{label:c=>c.label+': '+c.raw+' vias'}}},scales:{r:{ticks:{display:false},grid:{color:'#e5e7eb'}}}}});
+
+new Chart(document.getElementById('chartLargura'),{type:'radar',data:{labels:mrLabels,datasets:[{label:'Largura Média (m)',data:mrLabels.map(m=>(mrLargS[m]/mrLargC[m]).toFixed(1)),backgroundColor:'rgba(0,177,235,0.15)',borderColor:'#00b1eb',pointBackgroundColor:'#00b1eb',pointBorderColor:'#fff',pointRadius:5,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' m'}}},scales:{r:{ticks:{font:{size:10},backdropColor:'transparent'},grid:{color:'#e5e7eb'},pointLabels:{font:{size:12,weight:600}}}}}});
+
+// Table
+const sorted=[...vias].sort((a,b)=>b.valor-a.valor).slice(0,15);
+const tbody=document.getElementById('tableBody');
+sorted.forEach((v,i)=>{
+    const sc=v.status==='EXEC. ETURB'?'badge-exec':'badge-licitar';
+    const sl=v.status==='EXEC. ETURB'?'Executando':'A Licitar';
+    const mc='badge-'+v.mr.toLowerCase();
+    const ts=v.tipo.replace('PAVIMENTACAO ','Pav. ').replace('RECAPEAMENTO ','Recap. ').replace('CAPEAMENTO ','Cape. ').replace('ASFALTICO','Asf.').replace('ASFALTICA','Asf.').replace('POLIEDRICA','Polied.');
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="font-weight:600;color:var(--text-light);">${i+1}</td><td style="font-weight:600;">${v.via}</td><td>${v.bairro}</td><td><span class="badge ${mc}">${v.mr}</span></td><td style="font-size:12px;">${ts}</td><td>${v.ext.toLocaleString('pt-BR')} m</td><td class="valor">R$ ${v.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td><span class="badge ${sc}">${sl}</span></td>`;
+    tbody.appendChild(tr);
+});
+
+// ============================================================
+// MAP
+// ============================================================
+const filters={
+    tipo:new Set(['CAPEAMENTO ASFALTICO','RECAPEAMENTO ASFALTICO','PAVIMENTACAO ASFALTICA','PAVIMENTACAO POLIEDRICA']),
+    indic:new Set(['SDU','ETURB','VEREADOR','LIDERANCA']),
+    status:new Set(['EXEC. ETURB','LICITAR']),
+    mr:new Set(['MR1','MR2','MR3','MR4','MR5']),
+};
+let mapLayers=[];
+
+function toggleChip(el,fk){
+    const val=el.dataset.value;
+    if(el.classList.contains('active')){el.classList.remove('active');filters[fk].delete(val);}
+    else{el.classList.add('active');filters[fk].add(val);}
+    applyFilters();
+}
+
+function clearFilters(){
+    document.querySelectorAll('.chip').forEach(c=>c.classList.add('active'));
+    filters.tipo=new Set(['CAPEAMENTO ASFALTICO','RECAPEAMENTO ASFALTICO','PAVIMENTACAO ASFALTICA','PAVIMENTACAO POLIEDRICA']);
+    filters.indic=new Set(['SDU','ETURB','VEREADOR','LIDERANCA']);
+    filters.status=new Set(['EXEC. ETURB','LICITAR']);
+    filters.mr=new Set(['MR1','MR2','MR3','MR4','MR5']);
+    document.getElementById('searchInput').value='';
+    applyFilters();
+}
+
+function getFiltered(){
+    const s=document.getElementById('searchInput').value.toLowerCase();
+    return vias.filter(v=>filters.tipo.has(v.tipo)&&filters.indic.has(v.indic)&&filters.status.has(v.status)&&filters.mr.has(v.mr)&&(s===''||v.via.toLowerCase().includes(s)||v.bairro.toLowerCase().includes(s)));
+}
+
+function applyFilters(){
+    if(!mapInstance) return;
+    mapLayers.forEach(l=>mapInstance.removeLayer(l));
+    mapLayers=[];
+    const filtered=getFiltered();
+
+    document.getElementById('statCount').textContent=filtered.length;
+    document.getElementById('statExt').textContent=(filtered.reduce((s,v)=>s+v.ext,0)/1000).toFixed(1);
+    document.getElementById('statValor').textContent=(filtered.reduce((s,v)=>s+v.valor,0)/1e6).toFixed(1);
+
+    filtered.forEach(v=>{
+        if(!v.latI||!v.lonI||!v.latF||!v.lonF) return;
+        const color=tipoColors[v.tipo]||'#1d1d1b';
+        const isDashed=v.status==='LICITAR';
+        const w=Math.min(Math.max(v.larg/2,3),7);
+
+        const line=L.polyline([[v.latI,v.lonI],[v.latF,v.lonF]],{color:color,weight:w,opacity:.85,dashArray:isDashed?'8 6':null,lineCap:'round'}).addTo(mapInstance);
+
+        const ts=v.tipo.replace('PAVIMENTACAO ','Pav. ').replace('RECAPEAMENTO ','Recap. ').replace('CAPEAMENTO ','Cape. ').replace('ASFALTICO','Asf.').replace('ASFALTICA','Asf.').replace('POLIEDRICA','Polied.');
+        const sl=v.status==='EXEC. ETURB'?'Em Execução':'A Licitar';
+        const sc=v.status==='EXEC. ETURB'?'#13a538':'#fbba00';
+        const il=v.ni?v.indic+' — '+v.ni:v.indic;
+
+        line.bindPopup(`<div class="popup-inner"><h3>${v.via}</h3><div class="popup-row"><span class="label">Bairro</span><span class="value">${v.bairro}</span></div><div class="popup-row"><span class="label">MR</span><span class="value">${v.mr}</span></div><div class="popup-row"><span class="label">Tipo</span><span class="value">${ts}</span></div><div class="popup-row"><span class="label">Extensão</span><span class="value">${v.ext.toLocaleString('pt-BR')} m</span></div><div class="popup-row"><span class="label">Largura</span><span class="value">${v.larg} m</span></div><div class="popup-row"><span class="label">Valor Est.</span><span class="value" style="color:${color};font-weight:700;">R$ ${v.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></div><div class="popup-row"><span class="label">Indicação</span><span class="value">${il}</span></div><div class="popup-row"><span class="label">Status</span><span class="value" style="color:${sc};font-weight:700;">${sl}</span></div>${v.obs?'<div class="popup-row"><span class="label">Obs.</span><span class="value">'+v.obs+'</span></div>':''}</div><div class="popup-bar" style="background:${color};"></div>`,{maxWidth:300});
+
+        const sm=L.circleMarker([v.latI,v.lonI],{radius:4,fillColor:color,color:'#fff',weight:1.5,fillOpacity:1}).addTo(mapInstance);
+        const em=L.circleMarker([v.latF,v.lonF],{radius:4,fillColor:color,color:'#fff',weight:1.5,fillOpacity:1}).addTo(mapInstance);
+
+        mapLayers.push(line,sm,em);
+    });
+
+    // List
+    const listEl=document.getElementById('viaList');
+    listEl.innerHTML='';
+    [...filtered].sort((a,b)=>b.valor-a.valor).forEach(v=>{
+        const sc=v.status==='EXEC. ETURB'?'tag-exec':'tag-licitar';
+        const sl=v.status==='EXEC. ETURB'?'Exec.':'Licitar';
+        const div=document.createElement('div');
+        div.className='via-item';
+        div.innerHTML=`<div class="via-name">${v.via}</div><div class="via-meta"><span class="tag tag-mr">${v.mr}</span><span>${v.bairro}</span><span class="tag ${sc}">${sl}</span><span class="via-valor">R$ ${(v.valor/1000).toFixed(0)}k</span></div>`;
+        div.addEventListener('click',()=>{
+            if(v.latI&&v.lonI){
+                mapInstance.setView([(v.latI+v.latF)/2,(v.lonI+v.lonF)/2],16);
+                mapLayers.forEach(l=>{
+                    if(l instanceof L.Polyline&&!(l instanceof L.CircleMarker)){
+                        const ll=l.getLatLngs();
+                        if(Math.abs(ll[0].lat-v.latI)<0.0001&&Math.abs(ll[0].lng-v.lonI)<0.0001) l.openPopup();
+                    }
+                });
+            }
+        });
+        listEl.appendChild(div);
+    });
+}
+
+function toggleLegend(){
+    document.getElementById('mapLegend').classList.toggle('open');
+}
+
+function initMap(){
+    mapInstance=L.map('map',{zoomControl:true}).setView([-5.16,-42.78],12);
+
+    // Multiple tile layer options for reliability
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom:19,
+    }).addTo(mapInstance);
+
+    applyFilters();
+
+    // Fit bounds
+    const validVias=vias.filter(v=>v.latI&&v.lonI&&v.latF&&v.lonF);
+    if(validVias.length>0){
+        const bounds=L.latLngBounds(validVias.flatMap(v=>[[v.latI,v.lonI],[v.latF,v.lonF]]));
+        mapInstance.fitBounds(bounds.pad(0.1));
+    }
+
+    // Force resize after a moment
+    setTimeout(()=>mapInstance.invalidateSize(),200);
+    setTimeout(()=>mapInstance.invalidateSize(),500);
+}
+</script>
+
+</body>
+</html>
